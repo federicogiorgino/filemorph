@@ -35,6 +35,25 @@ export function FilesDropzone() {
     setIsConverting(false);
   };
 
+  const download = (action: Action) => {
+    const a = document.createElement("a");
+    a.style.display = "none";
+    a.href = action.url;
+    a.download = action.output;
+
+    document.body.appendChild(a);
+    a.click();
+
+    URL.revokeObjectURL(action.url);
+    document.body.removeChild(a);
+  };
+
+  const downloadAll = () => {
+    for (let action of actions) {
+      !action.is_error && download(action);
+    }
+  };
+
   return (
     <div>
       {isHovered ? "Hovered" : "Not Hovered"}

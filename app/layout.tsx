@@ -27,7 +27,9 @@ export default function RootLayout({
           themes={["light", "dark"]}
         >
           <Header />
-          <div>{children}</div>
+          <div className="container mx-auto p-10 sm:px-0 flex-1 flex min-h-screen">
+            {children}
+          </div>
           <Toaster />
         </ThemeProvider>
       </body>

@@ -13,9 +13,9 @@ export default function Home() {
           </h1>
         </div>
         <p className="text-center text-muted-foreground text-md md:text-lg md:px-24 xl:px-44 2xl:px-52">
-          With FileMorph you easily convert any file format in seconds! Our
-          free, user-friendly app simplifies the process, helping you handle
-          documents, images, and more without hassle.
+          With FileMorph you easily convert any image, audio or video in
+          seconds! Our free, user-friendly app simplifies the process, helping
+          you handle documents, images locally.
         </p>
       </div>
       <FilesDropzone />

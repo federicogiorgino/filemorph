@@ -6,7 +6,7 @@ import ReactDropzone from "react-dropzone";
 import { Icons } from "./ui/icons";
 import { ACCEPTED_FILES, FILE_EXTENSIONS } from "@/lib/consts";
 import { Action } from "@/lib/types";
-import {
+import convertFile, {
   bytesToSize,
   compressFileName,
   fileToIcon,
@@ -51,6 +51,46 @@ export function FilesDropzone() {
     setActions([]);
     setFiles([]);
     setIsReady(false);
+    setIsConverting(false);
+  };
+
+  const convert = async (): Promise<any> => {
+    let tmp_actions = actions.map((elt) => ({
+      ...elt,
+      is_converting: true,
+    }));
+    setActions(tmp_actions);
+    setIsConverting(true);
+    for (let action of tmp_actions) {
+      try {
+        const { url, output } = await convertFile(ffmpegRef.current, action);
+        tmp_actions = tmp_actions.map((elt) =>
+          elt === action
+            ? {
+                ...elt,
+                is_converted: true,
+                is_converting: false,
+                url,
+                output,
+              }
+            : elt
+        );
+        setActions(tmp_actions);
+      } catch (err) {
+        tmp_actions = tmp_actions.map((elt) =>
+          elt === action
+            ? {
+                ...elt,
+                is_converted: false,
+                is_converting: false,
+                is_error: true,
+              }
+            : elt
+        );
+        setActions(tmp_actions);
+      }
+    }
+    setIsDone(true);
     setIsConverting(false);
   };
 
@@ -278,6 +318,44 @@ export function FilesDropzone() {
             )}
           </div>
         ))}
+
+        <div className="flex justify-end w-full">
+          {isDone ? (
+            <div className="space-y-4 w-fit">
+              <Button
+                size="lg"
+                className="relative flex items-center w-full gap-2 py-4 font-semibold rounded-xl text-md"
+                onClick={downloadAll}
+              >
+                {actions.length > 1 ? "Download All" : "Download"}
+                <Icons.download />
+              </Button>
+              <Button
+                size="lg"
+                onClick={reset}
+                variant="outline"
+                className="rounded-xl"
+              >
+                Convert Another File(s)
+              </Button>
+            </div>
+          ) : (
+            <Button
+              size="lg"
+              disabled={!isReady || isConverting}
+              className="relative flex items-center py-4 font-semibold rounded-xl text-md w-44"
+              onClick={convert}
+            >
+              {isConverting ? (
+                <span className="text-lg animate-spin">
+                  <Icons.spinner />
+                </span>
+              ) : (
+                <span>Convert Now</span>
+              )}
+            </Button>
+          )}
+        </div>
       </div>
     );
   }

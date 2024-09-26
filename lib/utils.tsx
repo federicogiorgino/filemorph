@@ -94,7 +94,7 @@ function removeFileExtension(file_name: string) {
   return file_name; // No file extension found
 }
 
-export default async function convert(
+export default async function convertFile(
   ffmpeg: FFmpeg,
   action: Action
 ): Promise<any> {

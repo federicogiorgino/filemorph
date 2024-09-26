@@ -4,10 +4,26 @@ import { useToast } from "@/hooks/use-toast";
 import React, { useEffect, useRef, useState } from "react";
 import ReactDropzone from "react-dropzone";
 import { Icons } from "./ui/icons";
-import { ACCEPTED_FILES } from "@/lib/consts";
+import { ACCEPTED_FILES, FILE_EXTENSIONS } from "@/lib/consts";
 import { Action } from "@/lib/types";
-import { loadFfmpeg } from "@/lib/utils";
+import {
+  bytesToSize,
+  compressFileName,
+  fileToIcon,
+  loadFfmpeg,
+} from "@/lib/utils";
 import { FFmpeg } from "@ffmpeg/ffmpeg";
+import { Skeleton } from "./ui/skeleton";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "./ui/select";
+import { Badge } from "./ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
+import { Button } from "./ui/button";
 
 export function FilesDropzone() {
   const { toast } = useToast();
@@ -125,9 +141,148 @@ export function FilesDropzone() {
     load();
   }, []);
 
+  if (actions.length) {
+    return (
+      <div className="space-y-6">
+        {actions.map((action: Action, i: number) => (
+          <div
+            key={i}
+            className="relative flex flex-wrap items-center justify-between w-full px-4 py-4 space-y-2 border cursor-pointer lg:py-0 rounded-xl h-fit lg:h-20 lg:px-10 lg:flex-nowrap"
+          >
+            {!isLoaded && (
+              <Skeleton className="absolute w-full h-full -ml-10 cursor-progress rounded-xl" />
+            )}
+
+            <div className="flex items-center gap-4">
+              <span className="text-2xl text-orange-600">
+                {fileToIcon(action.file_type)}
+              </span>
+              <div className="flex items-center gap-1 w-96">
+                <span className="overflow-x-hidden font-medium text-md">
+                  {compressFileName(action.file_name)}
+                </span>
+                <span className="text-sm text-muted-foreground">
+                  ({bytesToSize(action.file_size)})
+                </span>
+              </div>
+            </div>
+
+            {action.is_error ? (
+              <Badge variant="destructive" className="flex gap-2">
+                <span>Error Converting File</span>
+                <Icons.error />
+              </Badge>
+            ) : action.is_converted ? (
+              <Badge variant="default" className="flex gap-2 bg-green-500">
+                <span>Done</span>
+                <Icons.done />
+              </Badge>
+            ) : action.is_converting ? (
+              <Badge variant="default" className="flex gap-2">
+                <span>Converting</span>
+                <span className="animate-spin">
+                  <Icons.spinner />
+                </span>
+              </Badge>
+            ) : (
+              <div className="flex items-center gap-4 text-muted-foreground text-md">
+                <span>Convert to</span>
+                <Select
+                  onValueChange={(value) => {
+                    if (FILE_EXTENSIONS.audio.includes(value)) {
+                      setDefaultValues("audio");
+                    } else if (FILE_EXTENSIONS.video.includes(value)) {
+                      setDefaultValues("video");
+                    }
+                    setSelected(value);
+                    updateAction(action.file_name, value);
+                  }}
+                  value={selected}
+                >
+                  <SelectTrigger className="w-32 font-medium text-center outline-none focus:outline-none focus:ring-0 text-muted-foreground bg-background text-md">
+                    <SelectValue placeholder="..." />
+                  </SelectTrigger>
+                  <SelectContent className="h-fit">
+                    {action.file_type.includes("image") && (
+                      <>
+                        {FILE_EXTENSIONS.image.map((elt, i) => (
+                          <SelectItem value={elt} className="mx-auto" key={i}>
+                            {elt}
+                          </SelectItem>
+                        ))}
+                      </>
+                    )}
+                    {action.file_type.includes("video") && (
+                      <Tabs defaultValue={defaultValues} className="w-full">
+                        <TabsList className="w-full">
+                          <TabsTrigger value="video" className="w-full">
+                            Video
+                          </TabsTrigger>
+                          <TabsTrigger value="audio" className="w-full">
+                            Audio
+                          </TabsTrigger>
+                        </TabsList>
+                        <TabsContent value="video">
+                          <>
+                            {FILE_EXTENSIONS.video.map((elt, i) => (
+                              <SelectItem
+                                value={elt}
+                                className="mx-auto"
+                                key={i}
+                              >
+                                {elt}
+                              </SelectItem>
+                            ))}
+                          </>
+                        </TabsContent>
+                        <TabsContent value="audio">
+                          <>
+                            {FILE_EXTENSIONS.audio.map((elt, i) => (
+                              <SelectItem
+                                value={elt}
+                                className="mx-auto"
+                                key={i}
+                              >
+                                {elt}
+                              </SelectItem>
+                            ))}
+                          </>
+                        </TabsContent>
+                      </Tabs>
+                    )}
+                    {action.file_type.includes("audio") && (
+                      <>
+                        {FILE_EXTENSIONS.audio.map((elt, i) => (
+                          <SelectItem value={elt} className="mx-auto" key={i}>
+                            {elt}
+                          </SelectItem>
+                        ))}
+                      </>
+                    )}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            {action.is_converted ? (
+              <Button variant="outline" onClick={() => download(action)}>
+                Download
+              </Button>
+            ) : (
+              <span
+                onClick={() => deleteAction(action)}
+                className="flex items-center justify-center w-10 h-10 text-2xl rounded-full cursor-pointer hover:bg-muted text-foreground"
+              >
+                <Icons.close />
+              </span>
+            )}
+          </div>
+        ))}
+      </div>
+    );
+  }
   return (
     <div>
-      {isHovered ? "Hovered" : "Not Hovered"}
       <ReactDropzone
         accept={ACCEPTED_FILES}
         onDrop={handleUpload}
